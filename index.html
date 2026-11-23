@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Yandex Go Toshkent — SuperApp</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            yandex: {
+              yellow: '#FCE000',
+              yellowHover: '#F0D500',
+              black: '#21201F',
+              grayBg: '#F5F4F2',
+              subtext: '#9E9B98',
+              samokat: '#00C853',
+              lavka: '#FF5C00'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom Master Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-[#18181B] text-[#21201F] min-h-screen flex flex-col items-center justify-center p-0 sm:p-4 select-none overflow-x-hidden font-sans">
+
+  <!-- Top Desktop Toolbar (View controls & quick shortcuts) -->
+  <header class="w-full max-w-4xl mb-3 hidden sm:flex items-center justify-between px-4 py-2 bg-neutral-900/90 backdrop-blur-md rounded-2xl border border-white/10 text-white text-xs">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 font-extrabold text-sm tracking-tight text-[#FCE000]">
+        <span class="w-2.5 h-2.5 rounded-full bg-[#FCE000] animate-pulse"></span>
+        Yandex Go Toshkent
+      </div>
+      <span class="text-neutral-500">|</span>
+      <span class="text-neutral-400 font-medium">SuperApp 1:1 Pixel-Accurate Clone</span>
+    </div>
+
+    <!-- Quick view switcher shortcuts -->
+    <div class="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl">
+      <button onclick="switchView('hub')" class="px-3 py-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all font-semibold">🏠 Asosiy</button>
+      <button onclick="switchView('taxi')" class="px-3 py-1 rounded-lg bg-[#FCE000] text-black font-extrabold active:scale-95 transition-all">🚕 Taksi</button>
+      <button onclick="switchView('scooters')" class="px-3 py-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all font-semibold text-[#00C853]">🛴 Samokat</button>
+      <button onclick="switchView('lavka')" class="px-3 py-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all font-semibold text-[#FF5C00]">🛍️ Lavka</button>
+      <button onclick="openBottomSheet('deliveryModalSheet')" class="px-3 py-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all font-semibold">📦 Kuryer</button>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button id="toggleDeviceWidthBtn" onclick="toggleDesktopWidth()" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition-all flex items-center gap-1 font-medium">
+        <i data-lucide="smartphone" style="width: 14px; height: 14px;"></i>
+        <span id="deviceWidthLabel">Kengaytirish</span>
+      </button>
+      <button onclick="sounds.muted = !sounds.muted; showToast(sounds.muted ? 'Ovoz o\'chirildi' : 'Ovoz yoqildi', 'info', 'volume-2');" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition-all" title="Ovoz">
+        <i data-lucide="volume-2" style="width: 14px; height: 14px;"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       MOBILE PHONE CONTAINER (430px centered frame on desktop, fullscreen on mobile)
+       ====================================================================== -->
+  <main id="phoneCase" class="phone-case">
+    <div class="phone-screen" id="phoneScreen">
+
+      <!-- Dynamic Island (iOS/Yandex style HUD status capsule) -->
+      <div id="dynamicIsland" class="dynamic-island">
+        <div class="w-3 h-3 rounded-full bg-neutral-800"></div>
+        <div class="w-3 h-3 rounded-full bg-neutral-800"></div>
+      </div>
+
+      <!-- Mobile Status Bar (Time, Battery, 5G, Wifi) -->
+      <div class="w-full px-7 pt-3 pb-1 flex items-center justify-between text-xs font-bold text-neutral-900 z-50 pointer-events-none">
+        <span id="phoneStatusTime">14:45</span>
+        <div class="flex items-center gap-1.5 text-neutral-900">
+          <i data-lucide="signal" style="width: 13px; height: 13px;"></i>
+          <span class="text-[10px] font-extrabold">5G</span>
+          <i data-lucide="wifi" style="width: 13px; height: 13px;"></i>
+          <div class="flex items-center gap-0.5">
+            <span class="text-[10px]">98%</span>
+            <i data-lucide="battery" style="width: 15px; height: 15px;"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast Container -->
+      <div id="toastContainer"></div>
+
+      <!-- ==================================================================
+           SCREEN VIEW 1: SUPERAPP HUB (HOME SCREEN)
+           ================================================================== -->
+      <div id="hubView" class="flex-1 overflow-y-auto no-scrollbar pb-24 transition-opacity duration-200">
+        
+        <!-- Top App Bar -->
+        <div class="px-4 pt-2 pb-3 flex items-center justify-between">
+          <!-- Profile / Menu Drawer Trigger -->
+          <button onclick="toggleSideMenu()" class="w-10 h-10 rounded-full bg-white shadow-sm border border-neutral-200/60 flex items-center justify-center active-press">
+            <i data-lucide="menu" style="width: 20px; height: 20px;" class="text-neutral-800"></i>
+          </button>
+
+          <!-- Current Address Pill -->
+          <button onclick="openBottomSheet('destPickerSheet')" class="flex items-center gap-1.5 px-3 py-1.5 bg-white shadow-sm border border-neutral-200/60 rounded-full max-w-[210px] active-press">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;" class="text-red-500 flex-shrink-0"></i>
+            <span class="text-xs font-bold text-neutral-800 truncate">Amir Temur 108</span>
+            <i data-lucide="chevron-down" style="width: 14px; height: 14px;" class="text-neutral-400 flex-shrink-0"></i>
+          </button>
+
+          <!-- Yandex Plus Points Badge -->
+          <button onclick="openBottomSheet('plusInfoSheet')" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full plus-gradient text-white shadow-sm active-press">
+            <i data-lucide="sparkles" style="width: 13px; height: 13px;" class="text-yellow-300"></i>
+            <span class="text-[11px] font-extrabold user-plus-badge">14 500 ball</span>
+          </button>
+        </div>
+
+        <!-- Hero Search Bar: "Qayerga boramiz?" -->
+        <div class="px-4 mb-4">
+          <div onclick="switchView('taxi')" class="w-full bg-white rounded-2xl p-3 shadow-md border border-neutral-100 flex items-center justify-between cursor-pointer active-press group">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-[#FCE000] flex items-center justify-center text-black group-hover:scale-105 transition-transform shadow-sm">
+                <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+              </div>
+              <div>
+                <div class="text-sm font-extrabold text-neutral-900">Qayerga boramiz?</div>
+                <div class="text-[11px] text-neutral-400 font-medium">Toshkent bo'ylab tezkor safar</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 bg-neutral-100 px-2.5 py-1 rounded-xl text-neutral-600 text-xs font-bold">
+              <span>Taksi</span>
+              <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </div>
+          </div>
+
+          <!-- Quick Destination Chips -->
+          <div class="flex items-center gap-2 mt-2.5 overflow-x-auto no-scrollbar">
+            <button onclick="switchView('taxi'); selectDestination(TASHKENT_LOCATIONS[0])" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 rounded-xl text-xs font-bold text-neutral-700 shadow-sm border border-neutral-200/50 active-press flex-shrink-0">
+              <i data-lucide="briefcase" style="width: 13px; height: 13px;" class="text-blue-500"></i> Ishga
+            </button>
+            <button onclick="switchView('taxi'); selectDestination(TASHKENT_LOCATIONS[4])" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 rounded-xl text-xs font-bold text-neutral-700 shadow-sm border border-neutral-200/50 active-press flex-shrink-0">
+              <i data-lucide="home" style="width: 13px; height: 13px;" class="text-amber-500"></i> Uyga
+            </button>
+            <button onclick="switchView('taxi'); selectDestination(TASHKENT_LOCATIONS[2])" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 rounded-xl text-xs font-bold text-neutral-700 shadow-sm border border-neutral-200/50 active-press flex-shrink-0">
+              <i data-lucide="plane" style="width: 13px; height: 13px;" class="text-purple-500"></i> Aeroport
+            </button>
+            <button onclick="switchView('taxi'); selectDestination(TASHKENT_LOCATIONS[3])" class="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 rounded-xl text-xs font-bold text-neutral-700 shadow-sm border border-neutral-200/50 active-press flex-shrink-0">
+              <i data-lucide="sparkles" style="width: 13px; height: 13px;" class="text-emerald-500"></i> Magic City
+            </button>
+          </div>
+        </div>
+
+        <!-- Stories Carousel Bar -->
+        <div class="px-4 mb-4">
+          <div id="storiesBarContainer" class="flex items-center gap-3 overflow-x-auto no-scrollbar py-1"></div>
+        </div>
+
+        <!-- ================================================================
+             BENTO GRID SERVICE CARDS (1:1 YANDEX GO MOBILE LAYOUT)
+             ================================================================ -->
+        <div class="px-4 mb-5">
+          <div class="grid grid-cols-2 gap-3">
+
+            <!-- Bento Card 1: Taksi (Large Primary) -->
+            <div onclick="switchView('taxi')" class="bento-card col-span-2 p-4 cursor-pointer active-press bg-gradient-to-br from-white via-white to-amber-50/50 border border-amber-100/50 shadow-sm">
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FCE000] text-black text-[10px] font-extrabold uppercase tracking-wider mb-1">
+                    3 daqiqada
+                  </div>
+                  <h3 class="text-lg font-black text-neutral-900 tracking-tight">Taksi</h3>
+                  <p class="text-xs text-neutral-500 font-medium">12 500 so'mdan boshlanadi</p>
+                </div>
+
+                <!-- 3D Yellow Taxi Graphic -->
+                <div class="relative w-28 h-16 flex items-center justify-center">
+                  <svg class="w-full h-full drop-shadow-md" viewBox="0 0 120 70" fill="none">
+                    <!-- Car Body Shadow -->
+                    <ellipse cx="60" cy="58" rx="48" ry="8" fill="#000000" fill-opacity="0.15"/>
+                    <!-- Main Body -->
+                    <path d="M12 44C12 40 16 38 24 38L32 38L42 22C44 19 48 17 54 17L82 17C88 17 93 20 96 25L104 38L108 38C114 38 116 41 116 45L116 49C116 52 113 54 110 54L104 54C102 48 97 44 91 44C85 44 80 48 78 54L42 54C40 48 35 44 29 44C23 44 18 48 16 54L14 54C12 54 12 52 12 49Z" fill="#FCE000" stroke="#21201F" stroke-width="2.5"/>
+                    <!-- Glass Cabin -->
+                    <path d="M43 36L48 24C49 22 51 21 54 21L66 21L66 36L43 36Z" fill="#21201F"/>
+                    <path d="M70 21L82 21C84 21 87 22 88 25L94 36L70 36L70 21Z" fill="#21201F"/>
+                    <!-- Taxi Checker on Roof -->
+                    <rect x="62" y="14" width="16" height="6" rx="2" fill="#FFFFFF" stroke="#21201F" stroke-width="1.5"/>
+                    <rect x="65" y="16" width="3" height="2" fill="#000"/>
+                    <rect x="71" y="16" width="3" height="2" fill="#000"/>
+                    <!-- Front & Rear Wheels -->
+                    <circle cx="29" cy="52" r="9" fill="#21201F"/>
+                    <circle cx="29" cy="52" r="4" fill="#D3D1CD"/>
+                    <circle cx="91" cy="52" r="9" fill="#21201F"/>
+                    <circle cx="91" cy="52" r="4" fill="#D3D1CD"/>
+                    <!-- Headlight -->
+                    <path d="M112 41L116 42L116 46L112 45Z" fill="#FFF" stroke="#21201F" stroke-width="1"/>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Quick action banner inside card -->
+              <div class="mt-2 pt-2 border-t border-neutral-100 flex items-center justify-between text-xs">
+                <span class="text-neutral-500 font-semibold">Toshkent bo'yicha 1 400+ haydovchi onlayn</span>
+                <span class="text-neutral-900 font-extrabold flex items-center gap-0.5">Buyurtma <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i></span>
+              </div>
+            </div>
+
+            <!-- Bento Card 2: Samokatlar (Scooters) -->
+            <div onclick="switchView('scooters')" class="bento-card p-3.5 cursor-pointer active-press bg-gradient-to-br from-white via-white to-emerald-50/60 border border-emerald-100/50">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  990 so'm/daq
+                </span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              </div>
+              <h4 class="font-extrabold text-neutral-900 text-sm">Samokatlar</h4>
+              <p class="text-[11px] text-neutral-400 font-medium">Yaqinda 10 ta</p>
+              
+              <div class="mt-2 flex justify-end">
+                <div class="w-16 h-12 flex items-center justify-center">
+                  <svg class="w-full h-full" viewBox="0 0 64 48" fill="none">
+                    <!-- Scooter Frame -->
+                    <path d="M50 38H14C11 38 10 36 11 34L22 10C22.5 9 24 8 26 8H36" stroke="#00C853" stroke-width="3.5" stroke-linecap="round"/>
+                    <!-- Handlebar -->
+                    <circle cx="36" cy="8" r="2.5" fill="#21201F"/>
+                    <!-- Wheels -->
+                    <circle cx="14" cy="38" r="6" fill="#21201F" stroke="#00C853" stroke-width="2"/>
+                    <circle cx="50" cy="38" r="6" fill="#21201F" stroke="#00C853" stroke-width="2"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bento Card 3: Do'kon / Lavka (15-min Grocery) -->
+            <div onclick="switchView('lavka')" class="bento-card p-3.5 cursor-pointer active-press bg-gradient-to-br from-white via-white to-orange-50/60 border border-orange-100/50">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-orange-100 text-orange-800">
+                  15 daqiqada
+                </span>
+                <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+              </div>
+              <h4 class="font-extrabold text-neutral-900 text-sm">Do'kon & Lavka</h4>
+              <p class="text-[11px] text-neutral-400 font-medium">Bozorlik va oziq-ovqat</p>
+
+              <div class="mt-2 flex justify-end">
+                <div class="w-16 h-12 flex items-center justify-center">
+                  <!-- Grocery Bag Graphic -->
+                  <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none">
+                    <path d="M12 16L15 40C15.2 41.5 16.5 42 18 42H30C31.5 42 32.8 41.5 33 40L36 16H12Z" fill="#FF5C00"/>
+                    <path d="M18 16V12C18 9 20.5 7 24 7C27.5 7 30 9 30 12V16" stroke="#21201F" stroke-width="2.5" stroke-linecap="round"/>
+                    <circle cx="21" cy="24" r="2" fill="#FFF"/>
+                    <circle cx="27" cy="24" r="2" fill="#FFF"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bento Card 4: Taomlar (Yandex Eats) -->
+            <div onclick="switchView('lavka'); setLavkaCategory('food');" class="bento-card p-3.5 cursor-pointer active-press bg-gradient-to-br from-white via-white to-amber-50/60 border border-amber-100/50">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-yellow-100 text-neutral-900">
+                  Keshbek 10%
+                </span>
+              </div>
+              <h4 class="font-extrabold text-neutral-900 text-sm">Taomlar</h4>
+              <p class="text-[11px] text-neutral-400 font-medium">Osh, Somsa, Fast-food</p>
+
+              <div class="mt-2 flex justify-end">
+                <div class="w-14 h-12 flex items-center justify-center">
+                  <svg class="w-11 h-11" viewBox="0 0 48 48" fill="none">
+                    <rect x="8" y="24" width="32" height="6" rx="3" fill="#E53935"/>
+                    <rect x="6" y="30" width="36" height="4" rx="2" fill="#00C853"/>
+                    <path d="M10 24C10 16 16 12 24 12C32 12 38 16 38 24H10Z" fill="#F57C00"/>
+                    <path d="M10 34C10 39 16 41 24 41C32 41 38 39 38 34H10Z" fill="#F57C00"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bento Card 5: Yetkazib berish (Delivery) -->
+            <div onclick="openBottomSheet('deliveryModalSheet')" class="bento-card p-3.5 cursor-pointer active-press bg-gradient-to-br from-white via-white to-blue-50/60 border border-blue-100/50">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-blue-100 text-blue-900">
+                  14 000 so'm
+                </span>
+              </div>
+              <h4 class="font-extrabold text-neutral-900 text-sm">Yetkazib berish</h4>
+              <p class="text-[11px] text-neutral-400 font-medium">Posilka va hujjatlar</p>
+
+              <div class="mt-2 flex justify-end">
+                <div class="w-14 h-12 flex items-center justify-center">
+                  <svg class="w-11 h-11" viewBox="0 0 48 48" fill="none">
+                    <rect x="10" y="14" width="28" height="24" rx="4" fill="#FCE000" stroke="#21201F" stroke-width="2"/>
+                    <path d="M10 22H38" stroke="#21201F" stroke-width="2"/>
+                    <path d="M24 14V38" stroke="#21201F" stroke-width="2"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bento Card 6: Transport / Navigator -->
+            <div onclick="switchView('transport')" class="bento-card col-span-2 p-3.5 cursor-pointer active-press bg-white border border-neutral-100 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+                  <i data-lucide="bus" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div>
+                  <h4 class="font-extrabold text-xs text-neutral-900">Transport & Metro jadvali</h4>
+                  <p class="text-[11px] text-neutral-400">Toshkent metro va avtobuslari real vaqtda</p>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" style="width: 18px; height: 18px;" class="text-neutral-400"></i>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Promo & Cashback Carousel -->
+        <div class="px-4 mb-5">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-extrabold text-neutral-800 uppercase tracking-wider">Aksiyalar & Takliflar</h4>
+            <span class="text-[11px] font-bold text-neutral-400">Hammasi</span>
+          </div>
+
+          <div class="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+            
+            <div onclick="openBottomSheet('plusInfoSheet')" class="w-64 flex-shrink-0 p-3.5 rounded-2xl plus-gradient text-white shadow-md active-press cursor-pointer">
+              <div class="flex items-center justify-between mb-2">
+                <span class="bg-white/20 text-[10px] font-bold px-2 py-0.5 rounded-full">Yandex Plus</span>
+                <i data-lucide="sparkles" style="width: 16px; height: 16px;" class="text-yellow-300"></i>
+              </div>
+              <h5 class="text-sm font-black leading-snug">10% Keshbek har bir taksi safaridan</h5>
+              <p class="text-[11px] text-white/80 mt-1">Ballarni to'plang va tekin safarlarga sarflang</p>
+            </div>
+
+            <div onclick="switchView('scooters')" class="w-64 flex-shrink-0 p-3.5 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white shadow-md active-press cursor-pointer">
+              <div class="flex items-center justify-between mb-2">
+                <span class="bg-white/20 text-[10px] font-bold px-2 py-0.5 rounded-full">Samokat</span>
+                <i data-lucide="zap" style="width: 16px; height: 16px;" class="text-yellow-300"></i>
+              </div>
+              <h5 class="text-sm font-black leading-snug">Birinchi samokat safari 0 so'm start</h5>
+              <p class="text-[11px] text-white/80 mt-1">Toshkent City va xiyobonlar bo'ylab oson yuring</p>
+            </div>
+
+            <div onclick="switchView('lavka')" class="w-64 flex-shrink-0 p-3.5 rounded-2xl bg-gradient-to-br from-orange-500 to-rose-600 text-white shadow-md active-press cursor-pointer">
+              <div class="flex items-center justify-between mb-2">
+                <span class="bg-white/20 text-[10px] font-bold px-2 py-0.5 rounded-full">Lavka</span>
+                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+              </div>
+              <h5 class="text-sm font-black leading-snug">15 daqiqada eshigingizgacha</h5>
+              <p class="text-[11px] text-white/80 mt-1">80 000 so'mdan yuqori xaridga yetkazish bepul!</p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Recent Destinations Quick Tap -->
+        <div class="px-4 mb-6">
+          <h4 class="text-xs font-extrabold text-neutral-800 uppercase tracking-wider mb-2.5">Tezkor Manzillar</h4>
+          <div id="recentDestinationsList" class="space-y-2"></div>
+        </div>
+
+      </div>
+
+      <!-- ==================================================================
+           SCREEN VIEW 2: TAKSI & SCOOTER INTERACTIVE MAP VIEW
+           ================================================================== -->
+      <div id="taxiView" class="hidden flex-1 relative w-full h-full overflow-hidden">
+        
+        <!-- Live Leaflet Map Container -->
+        <div id="taxiMap"></div>
+
+        <!-- Floating Map Overlay Controls -->
+        <div class="absolute top-4 left-4 z-[400] flex items-center gap-2">
+          <button onclick="switchView('hub')" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-neutral-800 active-press border border-neutral-100">
+            <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+          </button>
+          <div class="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md text-xs font-extrabold flex items-center gap-1.5 border border-neutral-100">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Toshkent, Jonli xarita</span>
+          </div>
+        </div>
+
+        <div class="absolute top-4 right-4 z-[400] flex flex-col gap-2">
+          <!-- Recenter Map -->
+          <button onclick="mapCtrl.map.setView([appState.taxi.pickup.lat, appState.taxi.pickup.lng], 15, { animate: true }); sounds.playTap();" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-neutral-800 active-press border border-neutral-100">
+            <i data-lucide="crosshair" style="width: 18px; height: 18px;"></i>
+          </button>
+          <!-- Toggle Scooter pins / Taxi pins -->
+          <button onclick="mapCtrl.showScooters(); sounds.playTap(); showToast('Samokatlar xaritada ko\'rsatildi', 'info', 'navigation');" class="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-[#00C853] active-press border border-neutral-100" title="Samokatlar">
+            <i data-lucide="zap" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ==================================================================
+           SCREEN VIEW 3: SAMOKAT ACTIVE RIDE HUD (WHEN RIDING)
+           ================================================================== -->
+      <div id="scooterActiveHUD" class="hidden flex-1 bg-neutral-900 text-white flex flex-col justify-between p-6 z-50">
+        <div>
+          <!-- Header info -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="font-extrabold text-sm text-emerald-400">Ninebot Max Pro #882</span>
+            </div>
+            <button onclick="toggleScooterLight()" id="scooterLightBtn" class="p-2.5 rounded-full bg-white/20 active-press">
+              <i data-lucide="lightbulb" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+
+          <!-- Speed Gauge -->
+          <div class="text-center my-10">
+            <div class="text-7xl font-black tracking-tighter text-emerald-400 speed-glow" id="scooterLiveSpeed">18</div>
+            <div class="text-xs font-bold uppercase tracking-widest text-neutral-400 mt-1">km / soat</div>
+          </div>
+
+          <!-- Mode Pills: Eco / Drive / Sport -->
+          <div class="flex items-center justify-center gap-2">
+            <button onclick="setScooterMode('eco')" id="mode-eco" class="px-4 py-1.5 rounded-full text-xs font-extrabold bg-white/10 active-press">ECO (15)</button>
+            <button onclick="setScooterMode('drive')" id="mode-drive" class="px-4 py-1.5 rounded-full text-xs font-extrabold bg-black text-white active-press ring-1 ring-white/30">DRIVE (20)</button>
+            <button onclick="setScooterMode('sport')" id="mode-sport" class="px-4 py-1.5 rounded-full text-xs font-extrabold bg-white/10 active-press">SPORT (25)</button>
+          </div>
+        </div>
+
+        <!-- Bottom Stats & Finish -->
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-3 bg-white/10 rounded-2xl p-4 backdrop-blur-md">
+            <div>
+              <div class="text-[11px] text-neutral-400 font-semibold">Vaqt</div>
+              <div class="text-xl font-black font-mono" id="scooterRideTimer">00:00</div>
+            </div>
+            <div class="text-right">
+              <div class="text-[11px] text-neutral-400 font-semibold">Narx</div>
+              <div class="text-xl font-black text-[#FCE000]" id="scooterRideCost">990 so'm</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="triggerScooterBell()" class="p-3.5 bg-white/20 rounded-2xl active-press flex items-center justify-center">
+              <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+            </button>
+            <button onclick="finishScooterRide()" class="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-2xl active-press shadow-lg">
+              Safarni yakunlash
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           SCREEN VIEW 4: YANDEX LAVKA & FOOD STOREFRONT
+           ================================================================== -->
+      <div id="lavkaView" class="hidden flex-1 overflow-y-auto no-scrollbar pb-24 bg-[#F5F4F2]">
+        
+        <!-- Lavka Header -->
+        <div class="bg-white px-4 pt-3 pb-3 border-b border-neutral-200/60 sticky top-0 z-30 shadow-sm">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <button onclick="switchView('hub')" class="p-1 rounded-full hover:bg-neutral-100 active-press">
+                <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+              </button>
+              <h2 class="text-base font-black text-neutral-900">Yandex Lavka</h2>
+            </div>
+            <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-extrabold">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>15 daqiqada</span>
+            </div>
+          </div>
+
+          <!-- Product Search Input -->
+          <div class="relative">
+            <input type="text" id="lavkaSearchInput" oninput="appState.lavka.search = this.value; renderLavkaCatalog();" placeholder="Mahsulot yoki taom izlash..." class="w-full bg-neutral-100 py-2 pl-9 pr-3 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FCE000]">
+            <i data-lucide="search" style="width: 16px; height: 16px;" class="absolute left-2.5 top-2.5 text-neutral-400"></i>
+          </div>
+        </div>
+
+        <!-- Category Horizontal Pills -->
+        <div class="px-4 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <button id="lavka-cat-all" onclick="setLavkaCategory('all')" class="lavka-cat-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-neutral-900 text-white shadow-sm flex-shrink-0 active-press">Barchasi</button>
+          <button id="lavka-cat-drinks" onclick="setLavkaCategory('drinks')" class="lavka-cat-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-neutral-700 shadow-sm flex-shrink-0 active-press">Ichimliklar</button>
+          <button id="lavka-cat-food" onclick="setLavkaCategory('food')" class="lavka-cat-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-neutral-700 shadow-sm flex-shrink-0 active-press">Fast-Food & Taom</button>
+          <button id="lavka-cat-fruits" onclick="setLavkaCategory('fruits')" class="lavka-cat-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-neutral-700 shadow-sm flex-shrink-0 active-press">Meva & Sabzavot</button>
+          <button id="lavka-cat-dairy" onclick="setLavkaCategory('dairy')" class="lavka-cat-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-neutral-700 shadow-sm flex-shrink-0 active-press">Sut mahsulotlari</button>
+          <button id="lavka-cat-bakery" onclick="setLavkaCategory('bakery')" class="lavka-cat-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-neutral-700 shadow-sm flex-shrink-0 active-press">Non & Pishiriq</button>
+          <button id="lavka-cat-sweets" onclick="setLavkaCategory('sweets')" class="lavka-cat-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-neutral-700 shadow-sm flex-shrink-0 active-press">Shirinliklar</button>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="px-4 py-2">
+          <div id="lavkaProductGrid" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- Floating Cart Bar at Bottom -->
+        <div id="lavkaFloatingCartBar" class="hidden fixed sm:absolute bottom-20 left-4 right-4 z-40 bg-[#21201F] text-white p-3 rounded-2xl shadow-xl flex items-center justify-between active-press cursor-pointer" onclick="openCartDrawer()">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-[#FCE000] text-black flex items-center justify-center font-extrabold">
+              <i data-lucide="shopping-bag" style="width: 16px; height: 16px;"></i>
+            </div>
+            <div>
+              <div class="text-xs font-extrabold" id="floatingCartCount">0 ta tovar</div>
+              <div class="text-[10px] text-neutral-400">15 daqiqada yetkazamiz</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-black text-[#FCE000]" id="floatingCartPrice">0 so'm</span>
+            <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================================================================
+           SCREEN VIEW 5: TRANSPORT & METRO TRACKER VIEW
+           ================================================================== -->
+      <div id="transportView" class="hidden flex-1 overflow-y-auto no-scrollbar pb-24 p-4 bg-[#F5F4F2]">
+        <div class="flex items-center gap-2 mb-4">
+          <button onclick="switchView('hub')" class="p-1 rounded-full bg-white shadow-sm active-press">
+            <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+          </button>
+          <h2 class="text-base font-black text-neutral-900">Toshkent Metro & Transport</h2>
+        </div>
+
+        <div id="transportLinesList"></div>
+      </div>
+
+      <!-- ==================================================================
+           MODAL OVERLAY BACKDROP (BLUR)
+           ================================================================== -->
+      <div id="modalOverlay" class="modal-overlay"></div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 1: TAXI TARIFF SELECTOR & ORDER (DEFAULT IN TAXI VIEW)
+           ================================================================== -->
+      <div id="taxiTariffSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          
+          <!-- Route Inputs Preview -->
+          <div class="bg-neutral-50 rounded-2xl p-2.5 mb-3 border border-neutral-200/70">
+            <div class="flex items-center gap-2.5 pb-2 border-b border-neutral-200/60">
+              <span class="w-2.5 h-2.5 rounded-full bg-black"></span>
+              <input type="text" readonly value="Amir Temur xiyoboni" class="bg-transparent text-xs font-bold text-neutral-800 flex-1 outline-none">
+            </div>
+            <div class="flex items-center gap-2.5 pt-2 cursor-pointer" onclick="openBottomSheet('destPickerSheet')">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+              <input type="text" id="taxiDestInput" readonly value="Tashkent City Mall" class="bg-transparent text-xs font-bold text-neutral-900 flex-1 outline-none cursor-pointer">
+              <span class="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">O'zgartirish</span>
+            </div>
+          </div>
+
+          <!-- Tariff Horizontal Carousel -->
+          <div class="flex items-center gap-2.5 overflow-x-auto no-scrollbar mb-3 pb-1">
+            
+            <!-- Start Tariff -->
+            <div id="tariff-start" onclick="selectTariff('start')" class="tariff-card ring-2 ring-black bg-yellow-50 flex-shrink-0 w-28 p-2.5 rounded-2xl border border-neutral-200/80 cursor-pointer active-press">
+              <div class="text-[10px] text-neutral-400 font-bold">3 daq</div>
+              <div class="font-black text-xs text-neutral-900 mt-0.5">Start</div>
+              <div class="text-[11px] font-extrabold text-neutral-800 mt-1">12 500 so'm</div>
+              <div class="text-[9px] text-neutral-400 font-medium mt-0.5">Spark</div>
+            </div>
+
+            <!-- Komfort Tariff -->
+            <div id="tariff-komfort" onclick="selectTariff('komfort')" class="tariff-card flex-shrink-0 w-28 p-2.5 rounded-2xl border border-neutral-200/80 cursor-pointer active-press bg-white">
+              <div class="text-[10px] text-neutral-400 font-bold">4 daq</div>
+              <div class="font-black text-xs text-neutral-900 mt-0.5">Komfort</div>
+              <div class="text-[11px] font-extrabold text-neutral-800 mt-1">18 000 so'm</div>
+              <div class="text-[9px] text-neutral-400 font-medium mt-0.5">Cobalt, Gentra</div>
+            </div>
+
+            <!-- Komfort+ Tariff -->
+            <div id="tariff-komfort_plus" onclick="selectTariff('komfort_plus')" class="tariff-card flex-shrink-0 w-28 p-2.5 rounded-2xl border border-neutral-200/80 cursor-pointer active-press bg-white">
+              <div class="text-[10px] text-neutral-400 font-bold">6 daq</div>
+              <div class="font-black text-xs text-neutral-900 mt-0.5">Komfort+</div>
+              <div class="text-[11px] font-extrabold text-neutral-800 mt-1">26 500 so'm</div>
+              <div class="text-[9px] text-neutral-400 font-medium mt-0.5">BYD, Malibu</div>
+            </div>
+
+            <!-- Biznes Tariff -->
+            <div id="tariff-biznes" onclick="selectTariff('biznes')" class="tariff-card flex-shrink-0 w-28 p-2.5 rounded-2xl border border-neutral-200/80 cursor-pointer active-press bg-white">
+              <div class="text-[10px] text-neutral-400 font-bold">8 daq</div>
+              <div class="font-black text-xs text-neutral-900 mt-0.5">Biznes</div>
+              <div class="text-[11px] font-extrabold text-neutral-800 mt-1">45 000 so'm</div>
+              <div class="text-[9px] text-neutral-400 font-medium mt-0.5">Kia K5, Benz</div>
+            </div>
+
+          </div>
+
+          <!-- Payment & Options Row -->
+          <div class="flex items-center justify-between py-2 border-t border-neutral-100 text-xs mb-3">
+            <button onclick="openBottomSheet('paymentMethodSheet')" class="flex items-center gap-1.5 font-bold text-neutral-800 active-press">
+              <span class="w-6 h-4 bg-emerald-600 text-white rounded text-[8px] flex items-center justify-center font-extrabold">UZ</span>
+              <span id="currentPaymentLabel">Uzcard •••• 4582</span>
+              <i data-lucide="chevron-right" style="width: 14px; height: 14px;" class="text-neutral-400"></i>
+            </button>
+
+            <button onclick="openBottomSheet('promoCodeSheet')" class="flex items-center gap-1 font-bold text-neutral-600 bg-neutral-100 px-2.5 py-1 rounded-xl active-press">
+              <i data-lucide="tag" style="width: 13px; height: 13px;"></i>
+              <span>Promokod</span>
+            </button>
+
+            <button onclick="openBottomSheet('driverPreferencesSheet')" class="p-1.5 rounded-xl bg-neutral-100 text-neutral-700 active-press">
+              <i data-lucide="sliders-horizontal" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
+
+          <!-- Main Call To Action Button -->
+          <button onclick="startTaxiOrder()" class="w-full py-3.5 bg-[#FCE000] hover:bg-[#F0D500] text-black font-extrabold text-sm rounded-2xl active:scale-[0.98] transition-all shadow-md flex items-center justify-between px-5">
+            <div class="text-left">
+              <div class="font-black">Buyurtma berish</div>
+              <div class="text-[10px] font-semibold text-neutral-700" id="taxiEtaText">~3 daqiqada yetib keladi</div>
+            </div>
+            <div class="text-base font-black" id="taxiOrderButtonPrice">18 000 so'm</div>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 2: TAXI SEARCHING DRIVER PULSE
+           ================================================================== -->
+      <div id="taxiSearchingSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-6 text-center">
+          
+          <div class="relative w-28 h-28 mx-auto my-4 flex items-center justify-center">
+            <div class="radar-ring"></div>
+            <div class="radar-ring"></div>
+            <div class="radar-ring"></div>
+            <div class="w-16 h-16 rounded-full bg-[#FCE000] text-black flex items-center justify-center font-black shadow-lg z-10 text-xl">
+              🚕
+            </div>
+          </div>
+
+          <h3 class="text-base font-extrabold text-neutral-900 mt-2">Haydovchi qidirilmoqda...</h3>
+          <p class="text-xs text-neutral-500 font-medium mt-1">Yaqin atrofdagi 14 ta avtomobil tekshirilmoqda</p>
+
+          <button onclick="cancelTaxiOrder()" class="mt-6 w-full py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-bold text-xs rounded-2xl active-press">
+            Qidiruvni bekor qilish
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 3: DRIVER ASSIGNED & ON WAY
+           ================================================================== -->
+      <div id="taxiDriverSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          
+          <!-- Status Banner -->
+          <div class="flex items-center justify-between pb-3 border-b border-neutral-100 mb-3">
+            <div>
+              <div class="text-xs font-black text-neutral-900" id="driverStatusTitle">Haydovchi yo'lda</div>
+              <div class="text-[11px] text-neutral-400 font-medium" id="driverEtaCounter">3 daqiqada keladi</div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span class="text-xs font-bold text-emerald-600">Jonli GPS</span>
+            </div>
+          </div>
+
+          <!-- Driver & Car Info Card -->
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80" class="w-12 h-12 rounded-full object-cover border-2 border-[#FCE000]" />
+              <div>
+                <div class="text-xs font-extrabold text-neutral-900" id="driverName">Jasur Rahimov</div>
+                <div class="text-[11px] font-bold text-neutral-500 flex items-center gap-1">
+                  <span class="text-amber-500 font-extrabold">★</span>
+                  <span id="driverRating">4.98 (2 840 safar)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Car License Plate Badge -->
+            <div class="text-right">
+              <div class="text-xs font-black text-neutral-900" id="driverCar">Oq Chevrolet Cobalt</div>
+              <div class="inline-block bg-neutral-900 text-white font-mono font-extrabold text-xs px-2 py-0.5 rounded border border-neutral-700 tracking-wider mt-1" id="driverPlate">
+                01 A 777 AA
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons: Call & Chat -->
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <button onclick="showToast('Qo\'ng\'iroq ulanmoqda: +998 90 999-11-22', 'info', 'phone');" class="py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 font-bold text-xs rounded-xl flex items-center justify-center gap-2 active-press">
+              <i data-lucide="phone" style="width: 15px; height: 15px;"></i> Qo'ng'iroq
+            </button>
+            <button onclick="openBottomSheet('driverChatSheet')" class="py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 font-bold text-xs rounded-xl flex items-center justify-center gap-2 active-press">
+              <i data-lucide="message-square" style="width: 15px; height: 15px;"></i> Chat yozish
+            </button>
+          </div>
+
+          <button onclick="cancelTaxiOrder()" class="w-full py-2.5 text-red-600 font-bold text-xs rounded-xl active-press">
+            Safarni bekor qilish
+          </button>
+
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 4: IN-APP DRIVER CHAT
+           ================================================================== -->
+      <div id="driverChatSheet" class="bottom-sheet h-[450px] flex flex-col">
+        <div class="drag-handle"></div>
+        <div class="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="text-xs font-extrabold text-neutral-900">Jasur (Cobalt 01 A 777 AA)</span>
+          </div>
+          <button onclick="closeBottomSheet('driverChatSheet')" class="p-1 rounded-full hover:bg-neutral-100">
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+
+        <div id="chatMessagesContainer" class="flex-1 p-4 overflow-y-auto space-y-2 text-xs">
+          <div class="flex justify-start">
+            <div class="bg-neutral-100 text-neutral-900 font-semibold p-2.5 rounded-2xl rounded-tl-none max-w-[80%]">
+              Assalomu alaykum! 3 daqiqada ko'rsatilgan manzildaman.
+              <div class="text-[9px] text-neutral-400 mt-1">14:46</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Chat Chips -->
+        <div class="px-4 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <button onclick="document.getElementById('driverChatInput').value = 'Men chiqdim'; sendDriverChatMessage();" class="px-2.5 py-1 bg-neutral-100 rounded-lg text-[11px] font-bold text-neutral-700 flex-shrink-0 active-press">Men chiqdim</button>
+          <button onclick="document.getElementById('driverChatInput').value = 'Konditsionerni yoqing'; sendDriverChatMessage();" class="px-2.5 py-1 bg-neutral-100 rounded-lg text-[11px] font-bold text-neutral-700 flex-shrink-0 active-press">Konditsioner</button>
+          <button onclick="document.getElementById('driverChatInput').value = 'Burchakda kutyapman'; sendDriverChatMessage();" class="px-2.5 py-1 bg-neutral-100 rounded-lg text-[11px] font-bold text-neutral-700 flex-shrink-0 active-press">Burchakda</button>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="p-3 border-t border-neutral-100 flex items-center gap-2">
+          <input type="text" id="driverChatInput" placeholder="Xabar yozing..." class="flex-1 bg-neutral-100 py-2 px-3 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#FCE000]">
+          <button onclick="sendDriverChatMessage()" class="p-2.5 rounded-xl bg-[#FCE000] text-black active-press">
+            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 5: TRIP RECEIPT & RATING MODAL
+           ================================================================== -->
+      <div id="tripReceiptSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-6 text-center">
+          <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="check-circle-2" style="width: 32px; height: 32px;"></i>
+          </div>
+          
+          <h3 class="text-lg font-black text-neutral-900">Safar yakunlandi!</h3>
+          <p class="text-xs text-neutral-400 font-medium mt-0.5">Yandex Go bilan sayohatingiz uchun rahmat</p>
+
+          <!-- Receipt Details -->
+          <div class="bg-neutral-50 rounded-2xl p-4 my-4 text-left border border-neutral-100 space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-neutral-400 font-medium">Qayerdan:</span>
+              <span class="font-bold text-neutral-800" id="receiptFrom">Amir Temur</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-neutral-400 font-medium">Qayerga:</span>
+              <span class="font-bold text-neutral-800" id="receiptTo">Tashkent City</span>
+            </div>
+            <div class="flex justify-between border-t border-neutral-200/60 pt-2">
+              <span class="text-neutral-900 font-extrabold">Jami to'lov:</span>
+              <span class="text-sm font-black text-neutral-900" id="receiptTotal">18 000 so'm</span>
+            </div>
+            <div class="flex justify-between text-purple-600 font-extrabold text-[11px]">
+              <span>Keshbek berildi:</span>
+              <span id="receiptPlusEarned">+1 800 ball</span>
+            </div>
+          </div>
+
+          <!-- Driver Rating Stars -->
+          <div class="mb-4">
+            <div class="text-xs font-bold text-neutral-600 mb-1.5">Haydovchiga baho bering:</div>
+            <div class="flex items-center justify-center gap-2 text-2xl text-amber-400">
+              <button onclick="this.classList.add('scale-125'); sounds.playTap();" class="active-press">★</button>
+              <button onclick="this.classList.add('scale-125'); sounds.playTap();" class="active-press">★</button>
+              <button onclick="this.classList.add('scale-125'); sounds.playTap();" class="active-press">★</button>
+              <button onclick="this.classList.add('scale-125'); sounds.playTap();" class="active-press">★</button>
+              <button onclick="this.classList.add('scale-125'); sounds.playTap();" class="active-press">★</button>
+            </div>
+          </div>
+
+          <button onclick="closeBottomSheet('tripReceiptSheet'); switchView('hub');" class="w-full py-3.5 bg-[#FCE000] text-black font-extrabold text-xs rounded-2xl active-press shadow-md">
+            Tayyor, bosh sahifaga
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 6: SCOOTER DETAIL SHEET
+           ================================================================== -->
+      <div id="scooterDetailSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <div class="text-sm font-black text-neutral-900" id="scooterDetailId">Ninebot Max Pro #881</div>
+              <div class="text-xs text-neutral-400 font-medium" id="scooterDetailRange">~28 km masofa</div>
+            </div>
+            <div class="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-extrabold" id="scooterDetailBattery">
+              94%
+            </div>
+          </div>
+
+          <!-- Tariff info -->
+          <div class="bg-neutral-50 rounded-2xl p-3 border border-neutral-100 flex items-center justify-between text-xs mb-4">
+            <div>
+              <div class="font-extrabold text-neutral-900">0 so'm start</div>
+              <div class="text-[10px] text-neutral-400">Bepul bron: 2 daqiqa</div>
+            </div>
+            <div class="text-right">
+              <div class="font-extrabold text-emerald-700">990 so'm / daqiqa</div>
+              <div class="text-[10px] text-neutral-400">Sug'urta kiritilgan</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <button onclick="triggerScooterBell()" class="py-2.5 bg-neutral-100 rounded-xl text-neutral-800 font-bold text-xs flex items-center justify-center gap-2 active-press">
+              <i data-lucide="volume-2" style="width: 16px; height: 16px;"></i> Qo'ng'iroq chalish
+            </button>
+            <button onclick="showToast('Samokat 2 daqiqaga bepul band qilindi!', 'success', 'lock');" class="py-2.5 bg-neutral-100 rounded-xl text-neutral-800 font-bold text-xs flex items-center justify-center gap-2 active-press">
+              <i data-lucide="clock" style="width: 16px; height: 16px;"></i> Bron qilish
+            </button>
+          </div>
+
+          <!-- Big Scan & Ride Button -->
+          <button onclick="startScooterQRScan()" class="w-full py-3.5 bg-[#00C853] hover:bg-emerald-600 text-white font-extrabold text-sm rounded-2xl active-press shadow-md flex items-center justify-center gap-2">
+            <i data-lucide="qr-code" style="width: 18px; height: 18px;"></i>
+            QR Skanerlash va Boshlash
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 7: SCOOTER RECEIPT MODAL
+           ================================================================== -->
+      <div id="scooterReceiptSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-6 text-center">
+          <div class="w-14 h-14 rounded-full bg-emerald-100 text-[#00C853] flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="check-circle" style="width: 32px; height: 32px;"></i>
+          </div>
+
+          <h3 class="text-lg font-black text-neutral-900">Samokat safari yakunlandi</h3>
+          <p class="text-xs text-neutral-400 mt-1">To'g'ri parkovka qilingani tekshirildi</p>
+
+          <div class="bg-neutral-50 rounded-2xl p-4 my-4 text-left border border-neutral-100 space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-neutral-500 font-medium">Safar davomiyligi:</span>
+              <span class="font-extrabold text-neutral-900" id="scooterReceiptTime">4 daqiqa</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-neutral-500 font-medium">Tarif:</span>
+              <span class="font-extrabold text-neutral-900">990 so'm/daq</span>
+            </div>
+            <div class="flex justify-between border-t border-neutral-200/60 pt-2">
+              <span class="text-neutral-900 font-black">Jami:</span>
+              <span class="text-sm font-black text-neutral-900" id="scooterReceiptCost">3 960 so'm</span>
+            </div>
+          </div>
+
+          <button onclick="closeBottomSheet('scooterReceiptSheet'); switchView('hub');" class="w-full py-3.5 bg-[#FCE000] text-black font-extrabold text-xs rounded-2xl active-press">
+            Bosh sahifaga qaytish
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 8: LAVKA CART DRAWER
+           ================================================================== -->
+      <div id="lavkaCartSheet" class="bottom-sheet max-h-[85vh] flex flex-col">
+        <div class="drag-handle"></div>
+        <div class="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
+          <h3 class="text-sm font-extrabold text-neutral-900">Savat</h3>
+          <button onclick="closeBottomSheet('lavkaCartSheet')" class="p-1 rounded-full hover:bg-neutral-100">
+            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+
+        <!-- Free Delivery Progress Bar -->
+        <div class="px-4 py-2.5 bg-neutral-50 border-b border-neutral-100">
+          <div class="text-[11px] font-bold text-neutral-600 mb-1" id="cartDeliveryText">
+            Yana 25 000 so'm xarid qiling — yetkazish bepul
+          </div>
+          <div class="w-full h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+            <div id="cartDeliveryProgress" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 60%;"></div>
+          </div>
+        </div>
+
+        <!-- Items List -->
+        <div id="cartDrawerItemsList" class="flex-1 overflow-y-auto px-4 py-2"></div>
+
+        <!-- Footer Breakdown & Order Button -->
+        <div class="p-4 border-t border-neutral-100 space-y-2">
+          <div class="flex justify-between text-xs font-semibold text-neutral-600">
+            <span>Mahsulotlar:</span>
+            <span id="cartSubtotalText">0 so'm</span>
+          </div>
+          <div class="flex justify-between text-xs font-semibold text-neutral-600">
+            <span>Yetkazib berish (15 daq):</span>
+            <span id="cartDeliveryFeeText">9 000 so'm</span>
+          </div>
+          <button onclick="submitLavkaOrder()" class="w-full mt-2 py-3.5 bg-[#FCE000] text-black font-black text-xs rounded-2xl active-press shadow-md" id="cartFinalTotalButton">
+            Buyurtma berish
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 9: LAVKA ORDER TRACKING (3-STAGE REALTIME)
+           ================================================================== -->
+      <div id="lavkaTrackingSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-6 text-center">
+          <div class="w-14 h-14 rounded-full bg-orange-100 text-[#FF5C00] flex items-center justify-center mx-auto mb-3">
+            <i data-lucide="bike" style="width: 28px; height: 28px;"></i>
+          </div>
+
+          <h3 class="text-base font-extrabold text-neutral-900" id="trackingStatusTitle">Kuryer buyurtmani oldi va yo'lga chiqdi</h3>
+          <p class="text-xs text-neutral-400 mt-1">Yetib kelish vaqti: <span id="trackingEtaText" class="font-bold text-neutral-800">8 daqiqa</span></p>
+
+          <!-- Delivery steps graphic -->
+          <div class="my-6 flex items-center justify-between relative px-4">
+            <div class="flex flex-col items-center">
+              <span class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">✓</span>
+              <span class="text-[9px] font-bold text-neutral-600 mt-1">Qabul qilindi</span>
+            </div>
+            <div class="flex-1 h-1 bg-emerald-500 mx-2"></div>
+            <div class="flex flex-col items-center">
+              <span class="w-7 h-7 rounded-full bg-[#FF5C00] text-white flex items-center justify-center text-xs font-bold animate-pulse">🚚</span>
+              <span class="text-[9px] font-bold text-neutral-900 mt-1">Yo'lda</span>
+            </div>
+            <div class="flex-1 h-1 bg-neutral-200 mx-2"></div>
+            <div class="flex flex-col items-center">
+              <span class="w-7 h-7 rounded-full bg-neutral-200 text-neutral-500 flex items-center justify-center text-xs font-bold">🏠</span>
+              <span class="text-[9px] font-bold text-neutral-400 mt-1">Eshikda</span>
+            </div>
+          </div>
+
+          <button onclick="closeBottomSheet('lavkaTrackingSheet'); switchView('hub');" class="w-full py-3 bg-neutral-100 text-neutral-800 font-bold text-xs rounded-2xl active-press">
+            Bosh sahifaga qaytish
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 10: COURIER / YETKAZIB BERISH DISPATCH
+           ================================================================== -->
+      <div id="deliveryModalSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          <h3 class="text-sm font-extrabold text-neutral-900 mb-3">Posilka yoki hujjat yetkazish</h3>
+
+          <!-- Courier Type Switcher -->
+          <div class="grid grid-cols-3 gap-2 mb-3">
+            <button onclick="setDeliveryType('foot')" id="delivery-type-foot" class="ring-2 ring-black bg-yellow-50 p-2.5 rounded-xl border border-neutral-200 text-center active-press">
+              <div class="text-xs font-black">Piyoda</div>
+              <div class="text-[10px] text-neutral-500 font-semibold mt-0.5">14 000 so'm</div>
+            </button>
+            <button onclick="setDeliveryType('auto')" id="delivery-type-auto" class="p-2.5 rounded-xl border border-neutral-200 text-center active-press bg-white">
+              <div class="text-xs font-black">Avto kuryer</div>
+              <div class="text-[10px] text-neutral-500 font-semibold mt-0.5">22 000 so'm</div>
+            </button>
+            <button onclick="setDeliveryType('cargo')" id="delivery-type-cargo" class="p-2.5 rounded-xl border border-neutral-200 text-center active-press bg-white">
+              <div class="text-xs font-black">Yuk mashina</div>
+              <div class="text-[10px] text-neutral-500 font-semibold mt-0.5">45 000 so'm</div>
+            </button>
+          </div>
+
+          <!-- Sender & Recipient fields -->
+          <div class="space-y-2 mb-3 text-xs">
+            <input type="text" placeholder="Qabul qiluvchi telefon raqami (+998 ...)" value="+998 97 987-65-43" class="w-full bg-neutral-100 p-2.5 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#FCE000]">
+            <input type="text" placeholder="Posilka tavsifi (masalan: Hujjatlar)" value="Hujjatlar va sovg'a" class="w-full bg-neutral-100 p-2.5 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-[#FCE000]">
+          </div>
+
+          <!-- Door-to-door toggle -->
+          <div class="flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl border border-neutral-100 mb-3 text-xs">
+            <div>
+              <div class="font-extrabold text-neutral-900">Eshikdan eshikkacha (+4 000 so'm)</div>
+              <div class="text-[10px] text-neutral-400">Kuryer to'g'ridan-to'g'ri xonadonga chiqadi</div>
+            </div>
+            <button onclick="toggleDoorToDoor()" id="doorToDoorToggle" class="w-11 h-6 bg-[#00C853] rounded-full p-0.5 transition-colors duration-200 flex items-center">
+              <span class="w-5 h-5 bg-white rounded-full shadow-md transform translate-x-5 transition-transform duration-200"></span>
+            </button>
+          </div>
+
+          <button onclick="submitDeliveryOrder()" class="w-full py-3.5 bg-[#FCE000] text-black font-extrabold text-xs rounded-2xl active-press shadow-md flex items-center justify-between px-5">
+            <span>Kuryer chaqirish</span>
+            <span id="deliveryOrderButtonPrice">18 000 so'm</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 11: DESTINATION SEARCH PICKER
+           ================================================================== -->
+      <div id="destPickerSheet" class="bottom-sheet max-h-[80vh] flex flex-col">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          <h3 class="text-sm font-extrabold text-neutral-900 mb-2">Qayerga boramiz?</h3>
+          <input type="text" id="destSearchQuery" placeholder="Manzil yoki joy nomini kiriting..." class="w-full bg-neutral-100 p-2.5 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#FCE000] mb-3">
+          
+          <div class="text-[11px] font-extrabold text-neutral-400 uppercase tracking-wider mb-2">Ommabop manzillar (Toshkent)</div>
+          <div id="destPickerList" class="flex-1 overflow-y-auto space-y-1"></div>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 12: PAYMENT METHODS
+           ================================================================== -->
+      <div id="paymentMethodSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          <h3 class="text-sm font-extrabold text-neutral-900 mb-3">To'lov usuli</h3>
+
+          <div class="space-y-2 mb-4 text-xs font-bold">
+            <div onclick="appState.taxi.paymentMethod = 'uzcard'; document.getElementById('currentPaymentLabel').innerText = 'Uzcard •••• 4582'; closeBottomSheet('paymentMethodSheet'); showToast('Uzcard tanlandi', 'info');" class="p-3 bg-neutral-50 rounded-xl flex items-center justify-between cursor-pointer border border-neutral-100 active-press">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-4 bg-emerald-600 text-white rounded text-[8px] flex items-center justify-center font-extrabold">UZ</span>
+                <span>Uzcard •••• 4582</span>
+              </div>
+              <span class="text-emerald-600 font-extrabold">✓</span>
+            </div>
+
+            <div onclick="appState.taxi.paymentMethod = 'humo'; document.getElementById('currentPaymentLabel').innerText = 'Humo •••• 8812'; closeBottomSheet('paymentMethodSheet'); showToast('Humo tanlandi', 'info');" class="p-3 bg-neutral-50 rounded-xl flex items-center justify-between cursor-pointer border border-neutral-100 active-press">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-4 bg-amber-500 text-white rounded text-[8px] flex items-center justify-center font-extrabold">HU</span>
+                <span>Humo •••• 8812</span>
+              </div>
+            </div>
+
+            <div onclick="appState.taxi.paymentMethod = 'cash'; document.getElementById('currentPaymentLabel').innerText = 'Naqd pul'; closeBottomSheet('paymentMethodSheet'); showToast('Naqd pul tanlandi', 'info');" class="p-3 bg-neutral-50 rounded-xl flex items-center justify-between cursor-pointer border border-neutral-100 active-press">
+              <div class="flex items-center gap-2">
+                <i data-lucide="banknote" style="width: 16px; height: 16px;"></i>
+                <span>Naqd pul</span>
+              </div>
+            </div>
+
+            <div onclick="appState.taxi.paymentMethod = 'plus'; document.getElementById('currentPaymentLabel').innerText = 'Plus ballari'; closeBottomSheet('paymentMethodSheet'); showToast('Plus ballari bilan to\'lash tanlandi', 'info');" class="p-3 bg-purple-50 rounded-xl flex items-center justify-between cursor-pointer border border-purple-100 active-press text-purple-700">
+              <div class="flex items-center gap-2">
+                <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+                <span>Yandex Plus ballari (14 500 ball)</span>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="showToast('Yangi karta qo\'shish oynasi ochildi', 'info');" class="w-full py-2.5 bg-neutral-100 text-neutral-900 font-bold text-xs rounded-xl active-press">
+            + Yangi karta qo'shish
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 13: PROMO CODE ACTIVATION
+           ================================================================== -->
+      <div id="promoCodeSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          <h3 class="text-sm font-extrabold text-neutral-900 mb-2">Promokodni kiriting</h3>
+          <p class="text-xs text-neutral-400 mb-3">Toshkent uchun amaldagi promokodlar: <strong class="text-neutral-800">TOSHKENT</strong> yoki <strong class="text-neutral-800">PLUS</strong></p>
+          <input type="text" id="promoCodeInput" placeholder="Kodni kiriting (masalan: TOSHKENT)" class="w-full bg-neutral-100 p-2.5 rounded-xl text-xs font-bold uppercase focus:outline-none focus:ring-2 focus:ring-[#FCE000] mb-3">
+          <button onclick="applyPromoCode()" class="w-full py-3 bg-[#FCE000] text-black font-extrabold text-xs rounded-xl active-press">
+            Faollashtirish
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 14: DRIVER PREFERENCES (OPTIONS)
+           ================================================================== -->
+      <div id="driverPreferencesSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          <h3 class="text-sm font-extrabold text-neutral-900 mb-3">Safar qulayliklari</h3>
+          
+          <div class="space-y-2 mb-4 text-xs">
+            <label class="flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl cursor-pointer">
+              <span class="font-bold text-neutral-800">Konditsionerni yoqish</span>
+              <input type="checkbox" checked class="w-4 h-4 accent-[#FCE000]">
+            </label>
+            <label class="flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl cursor-pointer">
+              <span class="font-bold text-neutral-800">Jim haydovchi (musiqasiz)</span>
+              <input type="checkbox" class="w-4 h-4 accent-[#FCE000]">
+            </label>
+            <label class="flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl cursor-pointer">
+              <span class="font-bold text-neutral-800">Bolalar o'rindig'i</span>
+              <input type="checkbox" class="w-4 h-4 accent-[#FCE000]">
+            </label>
+          </div>
+
+          <button onclick="closeBottomSheet('driverPreferencesSheet'); showToast('Qulayliklar saqlandi', 'success');" class="w-full py-3 bg-[#FCE000] text-black font-extrabold text-xs rounded-xl active-press">
+            Saqlash
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 15: YANDEX PLUS INFO
+           ================================================================== -->
+      <div id="plusInfoSheet" class="bottom-sheet">
+        <div class="drag-handle"></div>
+        <div class="p-6 text-center">
+          <div class="w-14 h-14 rounded-full plus-gradient text-white flex items-center justify-center mx-auto mb-3 shadow-lg">
+            <i data-lucide="sparkles" style="width: 28px; height: 28px;"></i>
+          </div>
+          <h3 class="text-lg font-black text-neutral-900">Yandex Plus Toshkent</h3>
+          <div class="text-2xl font-black text-purple-600 my-2">14 500 ball</div>
+          <p class="text-xs text-neutral-500 font-medium leading-relaxed">
+            Har bir Taksi (Komfort/Komfort+) va Lavka xarididan 10% ball to'planadi. 1 ball = 1 so'm. Ballarni bepul safarlar va xaridlar uchun ishlating!
+          </p>
+          <button onclick="closeBottomSheet('plusInfoSheet'); showToast('Plus obunasi faol!', 'success');" class="mt-5 w-full py-3.5 bg-neutral-900 text-white font-extrabold text-xs rounded-2xl active-press">
+            Yopish
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 16: RIDE HISTORY MODAL
+           ================================================================== -->
+      <div id="historyModalSheet" class="bottom-sheet max-h-[75vh] flex flex-col">
+        <div class="drag-handle"></div>
+        <div class="p-4 pt-1">
+          <h3 class="text-sm font-extrabold text-neutral-900 mb-3">Safarlar va buyurtmalar tarixi</h3>
+          <div id="historyItemsList" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           BOTTOM SHEET 17: SUPPORT CHAT
+           ================================================================== -->
+      <div id="supportChatSheet" class="bottom-sheet h-[420px] flex flex-col">
+        <div class="drag-handle"></div>
+        <div class="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
+          <h3 class="text-xs font-extrabold text-neutral-900">Yandex Go Qo'llab-quvvatlash (Toshkent)</h3>
+          <button onclick="closeBottomSheet('supportChatSheet')" class="p-1 rounded-full hover:bg-neutral-100">
+            <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+        <div class="flex-1 p-4 overflow-y-auto space-y-2 text-xs">
+          <div class="flex justify-start">
+            <div class="bg-neutral-100 text-neutral-900 p-2.5 rounded-2xl rounded-tl-none max-w-[85%] font-medium">
+              Assalomu alaykum, Alisher! Qanday yordam bera olamiz?
+            </div>
+          </div>
+        </div>
+        <div class="p-3 border-t border-neutral-100 flex items-center gap-2">
+          <input type="text" placeholder="Savolingizni yozing..." class="flex-1 bg-neutral-100 py-2 px-3 rounded-xl text-xs font-medium focus:outline-none">
+          <button onclick="showToast('Xabaringiz qabul qilindi', 'success'); closeBottomSheet('supportChatSheet');" class="p-2.5 bg-[#FCE000] text-black rounded-xl active-press">
+            <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           FULLSCREEN MODAL: STORIES VIEWER
+           ================================================================== -->
+      <div id="storyViewerModal" class="hidden absolute inset-0 z-[1100] bg-black">
+        <!-- Progress Bar at top -->
+        <div class="absolute top-4 left-4 right-4 z-20 flex gap-1.5">
+          <div class="h-1 flex-1 bg-white/30 rounded-full overflow-hidden">
+            <div id="storyProgressBar" class="h-full bg-white rounded-full"></div>
+          </div>
+        </div>
+        <div id="storyContentContainer" class="w-full h-full"></div>
+      </div>
+
+      <!-- ==================================================================
+           FULLSCREEN MODAL: QR SCANNER MOCK FOR SCOOTERS
+           ================================================================== -->
+      <div id="qrScannerModal" class="hidden absolute inset-0 z-[1050] bg-black/90 flex flex-col items-center justify-between p-8 text-white">
+        <div class="w-full flex items-center justify-between">
+          <span class="text-xs font-bold text-neutral-400">QR Skanerlash</span>
+          <button onclick="document.getElementById('qrScannerModal').classList.add('hidden')" class="p-2 rounded-full bg-white/20">
+            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+
+        <!-- Target Frame -->
+        <div class="relative w-64 h-64 border-2 border-emerald-500 rounded-3xl overflow-hidden flex items-center justify-center">
+          <div class="scanner-laser"></div>
+          <div class="text-center text-xs text-neutral-400 px-4">
+            Samokat rulidagi QR kodni ramka ichiga to'g'rilang
+          </div>
+        </div>
+
+        <div class="text-center text-xs text-neutral-400">
+          Chiroqni yoqish yoki kodni qo'lda kiritish mumkin
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           FULLSCREEN MODAL: PARKING PHOTO CONFIRMATION MOCK
+           ================================================================== -->
+      <div id="parkingPhotoModal" class="hidden absolute inset-0 z-[1050] bg-black/90 flex flex-col items-center justify-between p-6 text-white">
+        <div class="w-full flex justify-between items-center">
+          <span class="text-xs font-bold">Parkovka rasmi</span>
+          <button onclick="document.getElementById('parkingPhotoModal').classList.add('hidden')" class="p-1 rounded-full bg-white/20">
+            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+
+        <div class="w-72 h-80 border-2 border-dashed border-white/40 rounded-3xl flex flex-col items-center justify-center p-4 text-center">
+          <i data-lucide="camera" style="width: 48px; height: 48px;" class="text-emerald-400 mb-2"></i>
+          <p class="text-xs text-neutral-300 font-medium">Samokat piyodalarga xalal bermay to'g'ri qo'yilganini suratga oling</p>
+        </div>
+
+        <button onclick="confirmParkingPhoto()" class="w-full py-3.5 bg-emerald-500 text-white font-extrabold text-xs rounded-2xl active-press shadow-lg">
+          Suratni tasdiqlash va tugatish
+        </button>
+      </div>
+
+      <!-- ==================================================================
+           SLIDE-IN SIDE MENU DRAWER (LEFT DRAWER)
+           ================================================================== -->
+      <div id="sideMenuDrawer" class="absolute top-0 bottom-0 left-0 w-72 bg-white z-[600] transform -translate-x-full transition-transform duration-300 ease-out flex flex-col justify-between shadow-2xl">
+        <div class="p-5">
+          <!-- User Profile Card -->
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-12 h-12 rounded-full bg-[#FCE000] text-black font-black flex items-center justify-center text-base border-2 border-black">
+              AU
+            </div>
+            <div>
+              <h3 class="text-sm font-black text-neutral-900 leading-tight">Alisher Usmonov</h3>
+              <p class="text-xs text-neutral-400 font-medium">+998 90 123-45-67</p>
+            </div>
+          </div>
+
+          <!-- Yandex Plus Banner -->
+          <div onclick="openBottomSheet('plusInfoSheet'); toggleSideMenu();" class="p-3.5 rounded-2xl plus-gradient text-white mb-5 shadow-sm active-press cursor-pointer">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span>Yandex Plus</span>
+              <span class="user-plus-badge">14 500 ball</span>
+            </div>
+            <p class="text-[10px] text-white/80 mt-1">Ballarni taksi yoki Lavkada ishlating</p>
+          </div>
+
+          <!-- Menu Navigation Links -->
+          <div class="space-y-1 text-xs font-bold text-neutral-800">
+            <button onclick="openHistoryModal()" class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-50 active-press">
+              <i data-lucide="clock" style="width: 18px; height: 18px;" class="text-neutral-500"></i>
+              <span>Mening safarlarim</span>
+            </button>
+            <button onclick="openBottomSheet('paymentMethodSheet'); toggleSideMenu();" class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-50 active-press">
+              <i data-lucide="credit-card" style="width: 18px; height: 18px;" class="text-neutral-500"></i>
+              <span>To'lov usullari</span>
+            </button>
+            <button onclick="openBottomSheet('promoCodeSheet'); toggleSideMenu();" class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-50 active-press">
+              <i data-lucide="tag" style="width: 18px; height: 18px;" class="text-neutral-500"></i>
+              <span>Promokodlar</span>
+            </button>
+            <button onclick="showToast('Xavfsizlik markazi ochildi', 'info', 'shield-check'); toggleSideMenu();" class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-50 active-press">
+              <i data-lucide="shield-check" style="width: 18px; height: 18px;" class="text-neutral-500"></i>
+              <span>Xavfsizlik va SOS</span>
+            </button>
+            <button onclick="openSupportChat()" class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-neutral-50 active-press">
+              <i data-lucide="help-circle" style="width: 18px; height: 18px;" class="text-neutral-500"></i>
+              <span>Qo'llab-quvvatlash</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Drawer Footer (Language & Version) -->
+        <div class="p-5 border-t border-neutral-100 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-1.5 font-bold">
+            <span class="text-neutral-900">O'zbekcha</span>
+            <span class="text-neutral-300">/</span>
+            <span class="text-neutral-400 hover:text-neutral-600 cursor-pointer" onclick="showToast('Русский язык временно недоступен', 'info')">Русский</span>
+          </div>
+          <span class="text-[10px] text-neutral-400 font-semibold">v5.42.0 Toshkent</span>
+        </div>
+      </div>
+
+      <!-- ==================================================================
+           STICKY BOTTOM NAVIGATION BAR (SUPERAPP TABS)
+           ================================================================== -->
+      <nav class="absolute bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-neutral-200/60 px-2 flex items-center justify-around z-[450]">
+        
+        <!-- Tab 1: Hub (Asosiy) -->
+        <button id="nav-btn-hub" onclick="switchView('hub')" class="flex flex-col items-center justify-center flex-1 py-1 text-black font-bold active-press">
+          <div class="icon-circle p-1 rounded-full bg-[#FCE000] mb-0.5">
+            <i data-lucide="layout-grid" style="width: 16px; height: 16px;"></i>
+          </div>
+          <span class="text-[10px]">Asosiy</span>
+        </button>
+
+        <!-- Tab 2: Taksi -->
+        <button id="nav-btn-taxi" onclick="switchView('taxi')" class="flex flex-col items-center justify-center flex-1 py-1 text-neutral-400 font-medium active-press">
+          <div class="icon-circle p-1 rounded-full mb-0.5">
+            <i data-lucide="car" style="width: 16px; height: 16px;"></i>
+          </div>
+          <span class="text-[10px]">Taksi</span>
+        </button>
+
+        <!-- Tab 3: Samokat -->
+        <button id="nav-btn-scooters" onclick="switchView('scooters')" class="flex flex-col items-center justify-center flex-1 py-1 text-neutral-400 font-medium active-press">
+          <div class="icon-circle p-1 rounded-full mb-0.5">
+            <i data-lucide="zap" style="width: 16px; height: 16px;"></i>
+          </div>
+          <span class="text-[10px]">Samokat</span>
+        </button>
+
+        <!-- Tab 4: Lavka -->
+        <button id="nav-btn-lavka" onclick="switchView('lavka')" class="flex flex-col items-center justify-center flex-1 py-1 text-neutral-400 font-medium active-press">
+          <div class="icon-circle p-1 rounded-full mb-0.5">
+            <i data-lucide="shopping-bag" style="width: 16px; height: 16px;"></i>
+          </div>
+          <span class="text-[10px]">Lavka</span>
+        </button>
+
+        <!-- Tab 5: Profil / Menu -->
+        <button id="nav-btn-menu" onclick="toggleSideMenu()" class="flex flex-col items-center justify-center flex-1 py-1 text-neutral-400 font-medium active-press">
+          <div class="icon-circle p-1 rounded-full mb-0.5">
+            <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+          </div>
+          <span class="text-[10px]">Profil</span>
+        </button>
+
+      </nav>
+
+    </div>
+  </main>
+
+  <!-- Script to toggle desktop frame width -->
+  <script>
+    let isExpandedDesktop = false;
+    function toggleDesktopWidth() {
+      const phoneCase = document.getElementById('phoneCase');
+      const label = document.getElementById('deviceWidthLabel');
+      isExpandedDesktop = !isExpandedDesktop;
+      if (isExpandedDesktop) {
+        phoneCase.style.maxWidth = '760px';
+        phoneCase.style.borderRadius = '32px';
+        label.innerText = 'Mobil o\'lcham';
+      } else {
+        phoneCase.style.maxWidth = '430px';
+        phoneCase.style.borderRadius = '48px';
+        label.innerText = 'Kengaytirish';
+      }
+      setTimeout(() => {
+        if (mapCtrl && mapCtrl.map) mapCtrl.map.invalidateSize();
+      }, 350);
+    }
+  </script>
+
+  <!-- Master JavaScript Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

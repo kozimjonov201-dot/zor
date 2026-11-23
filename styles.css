@@ -1,0 +1,445 @@
+@charset "UTF-8";
+
+/* ==========================================================================
+   YANDEX GO SUPERAPP (TASHKENT EDITION) - MASTER STYLESHEET
+   Design Language: Yandex Modern Humanist / Geometric Sans / 60FPS Micro-interactions
+   ========================================================================== */
+
+:root {
+  --yandex-yellow: #FCE000;
+  --yandex-yellow-hover: #F0D500;
+  --yandex-black: #21201F;
+  --yandex-gray-bg: #F5F4F2;
+  --yandex-gray-card: #FFFFFF;
+  --yandex-gray-border: #E8E7E4;
+  --yandex-gray-subtext: #9E9B98;
+  --yandex-samokat: #00C853;
+  --yandex-lavka: #FF5C00;
+  --yandex-plus-purple: #8E2DE2;
+  --yandex-plus-pink: #FF007F;
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #1A1A1E;
+  color: var(--yandex-black);
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom Scrollbar for inner containers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #D5D3CE;
+  border-radius: 999px;
+}
+
+/* ==========================================================================
+   MOBILE FRAME & SHELL PRESENTATION
+   ========================================================================== */
+.phone-case {
+  width: 100%;
+  max-width: 430px;
+  height: 890px;
+  max-height: 94vh;
+  border-radius: 48px;
+  background: #000000;
+  padding: 10px;
+  box-shadow: 
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 25px 70px -10px rgba(0, 0, 0, 0.6),
+    0 10px 30px rgba(0, 0, 0, 0.4);
+  position: relative;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 640px) {
+  .phone-case {
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .phone-screen {
+    border-radius: 0 !important;
+  }
+  .phone-notch {
+    display: none !important;
+  }
+}
+
+.phone-screen {
+  width: 100%;
+  height: 100%;
+  background-color: var(--yandex-gray-bg);
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dynamic Island / Notch */
+.dynamic-island {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 30px;
+  background-color: #000000;
+  border-radius: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dynamic-island.expanded {
+  width: 270px;
+  height: 54px;
+  border-radius: 27px;
+  padding: 6px 14px;
+}
+
+/* ==========================================================================
+   BUTTON & CARD TAP EFFECTS (HAPTIC MICRO-INTERACTIONS)
+   ========================================================================== */
+.active-press {
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.active-press:active {
+  transform: scale(0.96);
+}
+.active-press-sm:active {
+  transform: scale(0.93);
+}
+
+.yandex-btn-yellow {
+  background-color: var(--yandex-yellow);
+  color: var(--yandex-black);
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+.yandex-btn-yellow:hover {
+  background-color: var(--yandex-yellow-hover);
+}
+.yandex-btn-yellow:active {
+  transform: scale(0.97);
+}
+
+.plus-gradient {
+  background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 50%, #FF007F 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ==========================================================================
+   BOTTOM SHEETS & MODALS (GPU ACCELERATED 60FPS)
+   ========================================================================== */
+.bottom-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #FFFFFF;
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+  transition: transform 0.35s cubic-bezier(0.19, 1, 0.22, 1);
+  transform: translateY(100%);
+  z-index: 500;
+  will-change: transform;
+}
+
+.bottom-sheet.open {
+  transform: translateY(0%);
+}
+
+.drag-handle {
+  width: 40px;
+  height: 5px;
+  background-color: #D3D1CD;
+  border-radius: 10px;
+  margin: 10px auto 6px auto;
+}
+
+/* Overlay Backdrop */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 450;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   LEAFLET MAP CUSTOMIZATIONS
+   ========================================================================== */
+#taxiMap, #scooterMap, #trackingMap {
+  width: 100%;
+  height: 100%;
+  background-color: #E6E4DE;
+  outline: none;
+}
+
+.leaflet-control-zoom,
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+/* Pulse radar ring around user pickup pin */
+.pickup-pulse-marker {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+.pickup-pulse-marker .pulse-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  margin-left: -22px;
+  border-radius: 50%;
+  background: rgba(252, 224, 0, 0.4);
+  border: 2px solid #FCE000;
+  animation: pulseBeacon 2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+.pickup-pulse-marker .center-pin {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  background: #21201F;
+  border: 3px solid #FCE000;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 11px;
+  color: #FCE000;
+}
+
+@keyframes pulseBeacon {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Destination "B" Marker */
+.destination-pin {
+  width: 28px;
+  height: 28px;
+  background: #E53935;
+  border: 3px solid #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* Custom Animated Taxi Car Marker */
+.taxi-marker-icon {
+  background: transparent;
+  border: none;
+  transition: transform 0.4s linear;
+}
+.taxi-car-svg {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+  transition: transform 0.3s ease;
+}
+
+/* Scooter Pin on Map */
+.scooter-pin-custom {
+  background: transparent;
+  border: none;
+}
+.scooter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #FFFFFF;
+  border: 2px solid #00C853;
+  padding: 2px 7px;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #21201F;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.scooter-badge:hover, .scooter-badge.selected {
+  transform: scale(1.15);
+  background: #FCE000;
+  border-color: #21201F;
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATION ENGINE
+   ========================================================================== */
+#toastContainer {
+  position: absolute;
+  top: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1200;
+  pointer-events: none;
+}
+
+.toast-item {
+  pointer-events: auto;
+  background: #21201F;
+  color: #FFFFFF;
+  padding: 12px 16px;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.toast-item.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ==========================================================================
+   RADAR PULSE EFFECT FOR SEARCHING DRIVER
+   ========================================================================== */
+.radar-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(252, 224, 0, 0.7);
+  background: rgba(252, 224, 0, 0.15);
+  animation: radarExpand 2.4s ease-out infinite;
+}
+.radar-ring:nth-child(2) {
+  animation-delay: 0.8s;
+}
+.radar-ring:nth-child(3) {
+  animation-delay: 1.6s;
+}
+
+@keyframes radarExpand {
+  0% {
+    width: 60px;
+    height: 60px;
+    opacity: 1;
+  }
+  100% {
+    width: 320px;
+    height: 320px;
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   BENTO GRID SERVICE TILES
+   ========================================================================== */
+.bento-card {
+  background: #FFFFFF;
+  border-radius: 22px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.bento-card:active {
+  transform: scale(0.97);
+}
+
+/* Story Ring */
+.story-ring-plus {
+  background: linear-gradient(45deg, #FF007F, #8E2DE2, #FCE000);
+}
+.story-ring-gold {
+  background: linear-gradient(45deg, #FCE000, #FF9100);
+}
+.story-ring-green {
+  background: linear-gradient(45deg, #00C853, #00E676);
+}
+
+/* QR Scanner Animation */
+.scanner-laser {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00C853, transparent);
+  box-shadow: 0 0 12px #00C853;
+  animation: scanLaser 2s linear infinite;
+}
+
+@keyframes scanLaser {
+  0% { top: 5%; }
+  50% { top: 95%; }
+  100% { top: 5%; }
+}
+
+/* Speedometer needle animation */
+.speed-glow {
+  text-shadow: 0 0 20px rgba(0, 200, 83, 0.4);
+}
